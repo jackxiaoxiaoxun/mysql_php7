@@ -6,7 +6,7 @@
  */
 if (! function_exists('mysql_connect')) {
 
-    function mysql_pconnect($server, $user, $pass)
+    function mysql_pconnect($server, $user, $pass, $new_link = null, $client_flags = nul)
     {
         mysql_php7::getSelf()->config[] = [
             'dsn' => "mysql:host=$server;",
@@ -19,7 +19,7 @@ if (! function_exists('mysql_connect')) {
         return count(mysql_php7::getSelf()->config);
     }
 
-    function mysql_connect($server, $user, $pass)
+    function mysql_connect($server, $user, $pass, $new_link = null, $client_flags = nul)
     {
         mysql_php7::getSelf()->config[] = [
             'dsn' => "mysql:host=$server;",
@@ -30,12 +30,21 @@ if (! function_exists('mysql_connect')) {
         return count(mysql_php7::getSelf()->config);
     }
 
+    function mysql_close ($link_identifier = null)
+    {
+        if ($link_identifier === null) {
+            $link_identifier = count(mysql_php7::getSelf()->config);
+        }
+        unset(mysql_php7::getSelf()->pdo[$link_identifier -1]);
+        return true;
+    }
+
     function mysql_select_db($dbname, $link_identifier = null)
     {
         if ($link_identifier === null) {
             $link_identifier = count(mysql_php7::getSelf()->config);
         }
-        mysql_php7::getSelf()->config[$link_identifier -1]['dsn'] .= "dbname=$dbname;";
+        mysql_php7::getSelf()->config[$link_identifier - 1]['dsn'] .= "dbname=$dbname;";
     }
 
     function mysql_set_charset($charset, $link_identifier = null)
@@ -44,7 +53,7 @@ if (! function_exists('mysql_connect')) {
             $link_identifier = count(mysql_php7::getSelf()->config);
         }
         
-        mysql_php7::getSelf()->config[$link_identifier -1]['dsn'] .= "charset=$charset;";
+        mysql_php7::getSelf()->config[$link_identifier - 1]['dsn'] .= "charset=$charset;";
     }
 
     function mysql_get_server_info($link_identifier = null)
@@ -75,6 +84,11 @@ if (! function_exists('mysql_connect')) {
         return $result->fetch(\PDO::FETCH_NUM);
     }
 
+    function mysql_fetch_object(\PDOStatement $result)
+    {
+        return $result->fetch(\PDO::FETCH_OBJ);
+    }
+
     function mysql_fetch_array(\PDOStatement $result, $result_type = 1)
     {
         $arr = [
@@ -86,7 +100,9 @@ if (! function_exists('mysql_connect')) {
     }
 
     function mysql_ping($link_identi)
-    {}
+    {
+        return true;
+    }
 
     function mysql_error($link_identifier = null)
     {
@@ -157,6 +173,7 @@ if (! function_exists('mysql_connect')) {
         private static $self;
 
         /**
+         *
          * @return mysql_php7
          */
         public static function getSelf()
@@ -168,12 +185,13 @@ if (! function_exists('mysql_connect')) {
         }
 
         /**
-         * @param number $id
+         *
+         * @param number $id            
          * @return PDO
          */
-        public function getPdo($id = 0)
+        public function getPdo($id = 1)
         {
-            $id     -= 1;
+            $id -= 1;
             if (empty($this->pdo[$id])) {
                 $this->pdo[$id] = new \PDO(
                     $this->config[$id]['dsn'], 
