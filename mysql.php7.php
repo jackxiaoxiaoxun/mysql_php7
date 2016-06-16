@@ -30,12 +30,12 @@ if (! function_exists('mysql_connect')) {
         return count(mysql_php7::getSelf()->config);
     }
 
-    function mysql_close ($link_identifier = null)
+    function mysql_close($link_identifier = null)
     {
         if ($link_identifier === null) {
             $link_identifier = count(mysql_php7::getSelf()->config);
         }
-        unset(mysql_php7::getSelf()->pdo[$link_identifier -1]);
+        unset(mysql_php7::getSelf()->pdo[$link_identifier - 1]);
         return true;
     }
 
@@ -129,9 +129,15 @@ if (! function_exists('mysql_connect')) {
         return mysql_php7::getSelf()->getPdo($link_identifier)->PDOStatement->rowCount();
     }
 
-    function mysql_result(\PDOStatement $result, $num)
+    function mysql_result(\PDOStatement $result, $num, $col = 0)
     {
-        return $result->fetchAll(\PDO::FETCH_NUM)[$num - 1];
+        if (is_numeric($col)) {
+            $fetch_style = \PDO::FETCH_NUM;
+        } else {
+            $fetch_style = \PDO::FETCH_ASSOC;
+        }
+        $r = $result->fetch($fetch_style, \PDO::FETCH_ORI_ABS, $num);
+        return $r[$col];
     }
 
     function mysql_num_rows(\PDOStatement $result)
@@ -194,9 +200,9 @@ if (! function_exists('mysql_connect')) {
             $id -= 1;
             if (empty($this->pdo[$id])) {
                 $this->pdo[$id] = new \PDO(
-                    $this->config[$id]['dsn'], 
-                    $this->config[$id]['user'], 
-                    $this->config[$id]['pass'], 
+                    $this->config[$id]['dsn'],
+                    $this->config[$id]['user'],
+                    $this->config[$id]['pass'],
                     $this->config[$id]['option']
                     );
             }
