@@ -6,7 +6,7 @@
  */
 if (! function_exists('mysql_connect')) {
 
-    function mysql_pconnect($server, $user, $pass, $new_link = null, $client_flags = nul)
+    function mysql_pconnect($server, $user, $pass, $new_link = null, $client_flags = null)
     {
         mysql_php7::getSelf()->config[] = [
             'dsn' => "mysql:host=$server;",
@@ -19,7 +19,7 @@ if (! function_exists('mysql_connect')) {
         return count(mysql_php7::getSelf()->config);
     }
 
-    function mysql_connect($server, $user, $pass, $new_link = null, $client_flags = nul)
+    function mysql_connect($server, $user, $pass, $new_link = null, $client_flags = null)
     {
         mysql_php7::getSelf()->config[] = [
             'dsn' => "mysql:host=$server;",
@@ -45,6 +45,7 @@ if (! function_exists('mysql_connect')) {
             $link_identifier = count(mysql_php7::getSelf()->config);
         }
         mysql_php7::getSelf()->config[$link_identifier - 1]['dsn'] .= "dbname=$dbname;";
+        return true;
     }
 
     function mysql_set_charset($charset, $link_identifier = null)
@@ -54,6 +55,7 @@ if (! function_exists('mysql_connect')) {
         }
         
         mysql_php7::getSelf()->config[$link_identifier - 1]['dsn'] .= "charset=$charset;";
+        return true;
     }
 
     function mysql_get_server_info($link_identifier = null)
@@ -64,6 +66,20 @@ if (! function_exists('mysql_connect')) {
         return mysql_php7::getSelf()->getPdo($link_identifier)->getAttribute(\PDO::ATTR_SERVER_VERSION);
     }
 
+    function mysql_get_client_info($link_identifier = null)
+    {
+        if ($link_identifier === null) {
+            $link_identifier = count(mysql_php7::getSelf()->config);
+        }
+
+        return mysql_php7::getSelf()->getPdo($link_identifier)->getAttribute(\PDO::ATTR_CLIENT_VERSION);
+    }
+
+    function mysql_real_escape_string($data,  $link_identifier = null )
+    {
+        return addslashes($data);
+    }
+
     function mysql_query($sql, $link_identifier = null)
     {
         if ($link_identifier === null) {
@@ -71,7 +87,12 @@ if (! function_exists('mysql_connect')) {
         }
         
         $pdo = mysql_php7::getSelf()->getPdo($link_identifier);
-        return $pdo->PDOStatement = $pdo->query($sql);
+        try{
+            return $pdo->PDOStatement = $pdo->query($sql);
+        } catch (PDOException $e)
+        {
+            return null;
+        }
     }
 
     function mysql_fetch_assoc(\PDOStatement $result)
@@ -109,7 +130,7 @@ if (! function_exists('mysql_connect')) {
         if ($link_identifier === null) {
             $link_identifier = count(mysql_php7::getSelf()->config);
         }
-        return mysql_php7::getSelf()->getPdo($link_identifier)->errorInfo();
+        return  mysql_php7::getSelf()->getPdo($link_identifier)->errorInfo() [2];
     }
 
     function mysql_errno($link_identifier = null)
@@ -120,6 +141,7 @@ if (! function_exists('mysql_connect')) {
         
         return mysql_php7::getSelf()->getPdo($link_identifier)->errorCode();
     }
+
 
     function mysql_affected_rows($link_identifier = null)
     {
